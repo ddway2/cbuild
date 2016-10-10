@@ -4,6 +4,5 @@ if ((${OPTS["process"]})); then
 %{/Bash}%
 %     for SERVICE in ${PRJ_SVCS[@]}; do
 usr/bin/%{ ${SERVICE} }%
-usr/share/man/man1/%{ ${SERVICE} }%.*
 %     done
 % fi
