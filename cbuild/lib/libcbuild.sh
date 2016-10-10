@@ -132,10 +132,8 @@ declare -A PRJ_HAS=(
 )
 
 # Set defaults
-PKG_AUTHOR="Lazy Programmer <eat@joes.com>"
 PRJ_SRCDIR=$TOPDIR/sources
 PRJ_BUILDDIR=$TOPDIR/build
-PRJ_IWYUDIR=$TOPDIR/iwyu
 PRJ_BATSDIR=$TOPDIR/bats
 PRJ_HAS_BATS=0
 PRJ_ETCDIR=$TOPDIR/etc
@@ -180,7 +178,7 @@ else
     . $($CPKG_HOME/bin/cpkg-config -L)
 fi
 
-PROJECT_VARS="PRJ_NAME PKG_AUTHOR"
+PROJECT_VARS="PRJ_NAME"
 PROJECT_VARS+=" PKG_SHORTDESC PKG_LONGDESC PRJ_TARGET PRJ_DEFPREFIX"
 PROJECT_DIRS="PRJ_SRCDIR PRJ_BUILDDIR PRJ_BATSDIR"
 PROJECT_DIRS+=" PRJ_BINDIR PRJ_TSTDIR PRJ_BINTSTDIR PRJ_BATSTSTDIR"
@@ -758,35 +756,25 @@ function cb_scan() {
 }
 
 function cb_find_std_headers() {
-    local KEYWORD
-    local CXX_INCDIR
+    local FILTER
 
-    if (($CB_CC_IS_GCC)); then
-        KEYWORD="install: "
-    elif (($CB_CC_IS_CLANG)); then
-        KEYWORD="libraries: ="
+    if (($CB_CC_IS_CLANG)); then
+        FILTER="c\+\+|clang"
+    elif (($CB_CC_IS_GCC)); then
+        FILTER="c\+\+|gcc"
     fi
 
     local INCDIRS=$(
-        $CB_CPP -print-search-dirs 2>&1 | \
-        grep "^$KEYWORD"
+        $CB_CPP -xc++ -Wp,-v -fsyntax-only </dev/null 2>&1 \
+        | egrep "^ /" \
+        | egrep "($FILTER)" \
+        | xargs
     )
-
-    INCDIRS=${INCDIRS##$KEYWORD}
-    INCDIRS=${INCDIRS//:/ }
-
-    if (($CB_CC_IS_CLANG)); then
-        CXX_INCDIR=${INCDIRS%%/clang*}
-        CXX_INCDIR+="/c++/v1"
-    fi
 
     local INCDIR
     local INC
 
     for INCDIR in $INCDIRS; do
-        INCDIR=${INCDIR%/}
-        INCDIR+="/include"
-
         [ -d $INCDIR ] || continue
 
         for INC in $(cp_find_rel $INCDIR); do
@@ -801,22 +789,6 @@ function cb_find_std_headers() {
                 continue
             fi
 
-            STD_HEADERS[$INC]=1
-        done
-    fi
-
-    if (($CB_CC_IS_GCC)); then
-        CXX_INCDIR=$(
-            $CB_CC -v 2>&1 | \
-            grep "^Configured with: "
-        )
-        CXX_INCDIR=${CXX_INCDIR##*--with-gxx-include-dir=}
-        CXX_INCDIR=${CXX_INCDIR%% *}
-        CXX_INCDIR=${CXX_INCDIR%/}
-    fi
-
-    if [ -d $CXX_INCDIR ]; then
-        for INC in $(cp_find_rel $CXX_INCDIR); do
             STD_HEADERS[$INC]=1
         done
     fi
@@ -843,6 +815,13 @@ function cb_configure_compiler_flags() {
         CB_CXXFLAGS+=("-stdlib=libc++" "-ftemplate-depth=512")
         CB_CXXFLAGS+=("-Qunused-arguments" "-fcolor-diagnostics")
         CB_CFLAGS+=("-Qunused-arguments" "-fcolor-diagnostics")
+    elif (($CB_CC_IS_GCC)); then
+        local VER=$($CB_CC -v 2>&1 | grep "gcc version" | cut -d ' ' -f 3)
+
+        if [[ "$VER" =~ ^6\. ]]; then
+            CB_CXXFLAGS+=("-fdiagnostics-color=always")
+            CB_CFLAGS+=("-fdiagnostics-color=always")
+        fi
     fi
 
     if (($CB_CC_IS_GCC)); then
@@ -1817,11 +1796,6 @@ function cb_run_generator() {
         s,Building C .*\.dir/(.*)\.o,  [CC ] \1,
         s,Linking .*/(bin|lib/plugins|lib|t)/(.*),  [LD ] \1/\2,
     " ${MAKEFILES[@]}
-}
-
-function cb_run_iwyu() {
-    mkdir -p $PRJ_IWYUDIR
-    $CB_GEN "${GENOPTS[@]}" $PRJ_SRCDIR
 }
 
 function cb_configure() {
