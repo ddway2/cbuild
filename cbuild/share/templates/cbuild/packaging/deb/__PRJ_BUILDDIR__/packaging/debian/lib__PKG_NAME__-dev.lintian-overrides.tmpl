@@ -4,4 +4,5 @@ OPTS["process"]=$((${PRJ_HAS["LIB"]}))
 % if ((${OPTS["process"]})); then
 lib%{ ${PKG_NAME} }%-dev: new-package-should-close-itp-bug
 lib%{ ${PKG_NAME} }%-dev: extra-license-file
+lib%{ ${PKG_NAME} }%-dev: wrong-path-for-interpreter
 % fi

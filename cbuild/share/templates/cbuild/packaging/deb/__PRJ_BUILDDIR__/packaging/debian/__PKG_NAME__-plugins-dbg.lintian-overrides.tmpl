@@ -3,4 +3,5 @@ OPTS["process"]=$((${PRJ_HAS["PLUG"]}))
 %{/Bash}%
 % if ((${OPTS["process"]})); then
 %{ ${PKG_NAME} }%-plugins-dbg: new-package-should-close-itp-bug
+%{ ${PKG_NAME} }%-plugins-dbg: wrong-path-for-interpreter
 % fi

@@ -7,4 +7,5 @@ OPTS["process"]=$((${PRJ_HAS["PLUG"]}))
 %{ ${PKG_NAME} }%-plugins: pkg-has-shlibs-control-file-but-no-actual-shared-libs
 %{ ${PKG_NAME} }%-plugins: postinst-has-useless-call-to-ldconfig
 %{ ${PKG_NAME} }%-plugins: postrm-has-useless-call-to-ldconfig
+%{ ${PKG_NAME} }%-plugins: wrong-path-for-interpreter
 % fi
