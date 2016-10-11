@@ -8,6 +8,19 @@ OPTS["process"]=$((${PRJ_HAS["LIB"]}))
 %{ % }%:
 	dh $@
 
+% if ((${#PRJ_MANPAGES[@]})); then
+override_dh_auto_build-indep:
+	@echo "building man pages"
+	@mkdir -p usr/share/man/man1
+%     for MANPAGE in ${!PRJ_MANPAGES[@]}; do
+	@echo "%{ $MANPAGE }%.1"
+	@pod2man \
+		-n %{ $MANPAGE }% \
+		%{ ${PRJ_MANPAGES[$MANPAGE]} }% \
+		usr/share/man/man1/%{ $MANPAGE }%.1
+%     done
+% fi
+
 override_dh_strip:
 % if ((${PRJ_HAS["BIN"]})); then
 	dh_strip -p%{ ${PKG_NAME} }% --dbg-package=%{ ${PKG_NAME} }%-dbg
